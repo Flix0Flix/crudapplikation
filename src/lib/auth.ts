@@ -1,13 +1,20 @@
 import { betterAuth } from "better-auth";
 import Database from "better-sqlite3";
-
+ 
 export const auth = betterAuth({
-  database: new Database(process.env.DATABASE_URL!),
-  socialProviders: {
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      redirectUri: `${process.env.BETTER_AUTH_URL}/api/auth/callback/github`
+    database: new Database("./database.db"),
+    socialProviders: {
+        github: {
+            clientId: process.env.GITHUB_CLIENT_ID as string,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+        },
+        google: { 
+            clientId: process.env.GOOGLE_CLIENT_ID as string, 
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
+        },    
+    },
+    emailAndPassword: {
+        enabled: true
     }
-  }
-}).handler;
+    
+})

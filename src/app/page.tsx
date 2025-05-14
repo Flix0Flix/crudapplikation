@@ -1,387 +1,70 @@
 'use client'
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useEffect } from 'react'
+import { authClient } from '@/lib/auth-client'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-interface Car {
-  id: number;
-  title: string;
-  description: string;
-  year: number;
-  driven: number;
-  registration: string;
-  created_at: string;
-}
-
-export default function CarManagement() {
-  const [activeView, setActiveView] = useState<'list' | 'add' | 'update' | 'delete'>('list');
-  const [carData, setCarData] = useState({
-    id: '',
-    title: '',
-    description: '',
-    year: '',
-    driven: '',
-    registration: ''
-  });
-  const [cars, setCars] = useState<Car[]>([]);
+export default function Home() {
+  const router = useRouter()
+  const { data: session } = authClient.useSession()
+  
+  console.log('user', session?.user)
+  
+  const handleSignIn = async () => {
+    console.log('signing in')
+    try {
+      await authClient.signIn.social({ provider: 'github' })
+    } catch (error) {
+      console.error('Sign in failed:', error)
+    }
+  }
 
   useEffect(() => {
-    if (activeView === 'list') {
-      fetchCars();
+    if (session?.user) {
+      router.push('/dashboard')
     }
-  }, [activeView]);
-
-  const fetchCars = async () => {
-    try {
-      const response = await fetch('/api/cars');
-      const data = await response.json();
-      setCars(data);
-    } catch (error) {
-      console.error('Error fetching cars:', error);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setCarData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/cars', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...carData,
-          year: carData.year ? parseInt(carData.year) : null,
-          driven: carData.driven ? parseInt(carData.driven) : null
-        }),
-      });
-      
-      if (response.ok) {
-        resetForm();
-        setActiveView('list');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const handleUpdateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/cars', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: parseInt(carData.id),
-          title: carData.title,
-          description: carData.description,
-          year: carData.year ? parseInt(carData.year) : null,
-          driven: carData.driven ? parseInt(carData.driven) : null,
-          registration: carData.registration
-        }),
-      });
-      
-      if (response.ok) {
-        resetForm();
-        setActiveView('list');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const handleDeleteSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/cars', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: parseInt(carData.id)
-        }),
-      });
-      
-      if (response.ok) {
-        resetForm();
-        setActiveView('list');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const resetForm = () => {
-    setCarData({
-      id: '',
-      title: '',
-      description: '',
-      year: '',
-      driven: '',
-      registration: ''
-    });
-  };
-
+  }, [session, router])
+  
   return (
-    <div className="p-4">
-      <nav className="bg-gray-200 p-4 mb-4">
-        <div className="flex gap-2 items-center">
-          <button 
-            onClick={() => setActiveView('list')}
-            className="px-3 py-1 bg-white rounded border"
-          >
-            Car List
-          </button>
-          <button 
-            onClick={() => {
-              resetForm();
-              setActiveView('add');
-            }}
-            className="px-3 py-1 bg-white rounded border"
-          >
-            Add Car
-          </button>
-          <button 
-            onClick={() => {
-              resetForm();
-              setActiveView('update');
-            }}
-            className="px-3 py-1 bg-white rounded border"
-          >
-            Update Car
-          </button>
-          <button 
-            onClick={() => {
-              resetForm();
-              setActiveView('delete');
-            }}
-            className="px-3 py-1 bg-white rounded border"
-          >
-            Delete Car
-          </button>
-          <h1 className="p-2 flex-grow">Car Application</h1>
-        </div>
-      </nav>
-
-      {activeView === 'list' && (
-        <div className="bg-white p-6 rounded border">
-          <h1 className="text-xl mb-4">Car List</h1>
-          {cars.length === 0 ? (
-            <p>No cars found. Add a car to get started.</p>
-          ) : (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 border text-left">ID</th>
-                  <th className="p-2 border text-left">Title</th>
-                  <th className="p-2 border text-left">Year</th>
-                  <th className="p-2 border text-left">Miles/KMs</th>
-                  <th className="p-2 border text-left">Registration</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cars.map((car) => (
-                  <tr key={car.id} className="border">
-                    <td className="p-2 border">{car.id}</td>
-                    <td className="p-2 border">{car.title}</td>
-                    <td className="p-2 border">{car.year}</td>
-                    <td className="p-2 border">{car.driven}</td>
-                    <td className="p-2 border">{car.registration}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {activeView === 'add' && (
-        <div className="max-w-md mx-auto bg-white p-6 rounded border">
-          <h1 className="text-xl mb-4">Add New Car</h1>
-          <form onSubmit={handleAddSubmit}>
-            <div className="mb-4">
-              <label className="block mb-1">Title*</label>
-              <input
-                type="text"
-                name="title"
-                value={carData.title}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-                required
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Welcome</h1>
+        
+        {session?.user && (
+          <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+            <h2 className="font-semibold text-lg">{session.user.name}</h2>
+            <p className="text-gray-600">{session.user.email}</p>
+            {session.user.image && (
+              <img 
+                src={session.user.image} 
+                alt="profile" 
+                className="w-16 h-16 rounded-full mx-auto mt-2"
               />
-            </div>
-
-            <div className="mb-4">
-              <label className="block mb-1">Description</label>
-              <textarea
-                name="description"
-                value={carData.description}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block mb-1">Year*</label>
-                <input
-                  type="number"
-                  name="year"
-                  value={carData.year}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">Miles/KMs</label>
-                <input
-                  type="number"
-                  name="driven"
-                  value={carData.driven}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block mb-1">Registration</label>
-              <input
-                type="text"
-                name="registration"
-                value={carData.registration}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full p-2 bg-blue-500 text-white rounded"
+            )}
+          </div>
+        )}
+        
+        {!session?.user ? (
+          <>
+            <button 
+              onClick={handleSignIn}
+              className="w-full bg-gray-800 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 mb-4"
             >
-              Add Car
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+              </svg>
+              Sign in with GitHub
             </button>
-          </form>
-        </div>
-      )}
-
-      {activeView === 'update' && (
-        <div className="max-w-md mx-auto bg-white p-6 rounded border">
-          <h1 className="text-xl mb-4">Update Car</h1>
-          <form onSubmit={handleUpdateSubmit}>
-            <div className="mb-4">
-              <label className="block mb-1">Car ID*</label>
-              <input
-                type="number"
-                name="id"
-                value={carData.id}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-                required
-                placeholder="Enter car ID to update"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block mb-1">Title*</label>
-              <input
-                type="text"
-                name="title"
-                value={carData.title}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block mb-1">Description</label>
-              <textarea
-                name="description"
-                value={carData.description}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block mb-1">Year*</label>
-                <input
-                  type="number"
-                  name="year"
-                  value={carData.year}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">Miles/KMs</label>
-                <input
-                  type="number"
-                  name="driven"
-                  value={carData.driven}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block mb-1">Registration</label>
-              <input
-                type="text"
-                name="registration"
-                value={carData.registration}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full p-2 bg-blue-500 text-white rounded"
+            <Link 
+              href={'/dashboard'} 
+              className="text-blue-600 hover:text-blue-800 text-sm"
             >
-              Update Car
-            </button>
-          </form>
-        </div>
-      )}
-
-      {activeView === 'delete' && (
-        <div className="max-w-md mx-auto bg-white p-6 rounded border">
-          <h1 className="text-xl mb-4">Delete Car</h1>
-          <form onSubmit={handleDeleteSubmit}>
-            <div className="mb-4">
-              <label className="block mb-1">Car ID*</label>
-              <input
-                type="number"
-                name="id"
-                value={carData.id}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-                required
-                placeholder="Enter car ID to delete"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full p-2 bg-red-500 text-white rounded"
-            >
-              Delete
-            </button>
-          </form>
-        </div>
-      )}
+              Go to Dashboard
+            </Link>
+          </>
+        ) : null}
+      </div>
     </div>
-  );
+  )
 }

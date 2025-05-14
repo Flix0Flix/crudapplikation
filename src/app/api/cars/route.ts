@@ -2,18 +2,6 @@ import Database from 'better-sqlite3';
 
 const db = new Database('./database.db');
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS vehicles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT,
-    year INTEGER,
-    driven INTEGER,
-    registration TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
 export async function GET() {
   try {
     const cars = db.prepare('SELECT * FROM vehicles ORDER BY created_at DESC').all();
